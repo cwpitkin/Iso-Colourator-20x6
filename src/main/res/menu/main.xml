@@ -3,8 +3,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="com.cwp.iso_colourator_20x6.app.MainActivity" >
     
-    <item android:id="@+id/action_settings"
-        android:title="@string/action_settings"
+    <item android:id="@+id/action_load_image"
+        android:title="@string/action_load_image"
         android:orderInCategory="100"
-        app:showAsAction="never" />
+        app:showAsAction="always" />
 </menu>
