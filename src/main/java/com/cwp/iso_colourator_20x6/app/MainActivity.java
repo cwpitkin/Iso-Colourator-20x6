@@ -1,11 +1,16 @@
 package com.cwp.iso_colourator_20x6.app;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -19,6 +24,33 @@ public class MainActivity extends ActionBarActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         img = (ImageView) findViewById(R.id.imageView);
+
+        img.setOnTouchListener(new ImageView.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent event) {
+                int x = (int) event.getX();
+                int y = (int) event.getY();
+                Bitmap refBitmap = ((BitmapDrawable)img.getDrawable()).getBitmap();
+                int height = refBitmap.getHeight();
+                int width = refBitmap.getWidth();
+                Bitmap greyBm = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
+                int pixel,alpha,red,green,blue,grey;
+                for(int i = 0;i<width;i++) {
+                    for(int j = 0; j < height;j++) {
+                        pixel = refBitmap.getPixel(i,j);
+                        alpha = Color.alpha(pixel);
+                        red = Color.red(pixel);
+                        green = Color.green(pixel);
+                        blue = Color.blue(pixel);
+                        grey = (int)(0.299 * red + 0.587 * green + 0.114 * blue);
+                        greyBm.setPixel(i,j,Color.argb(alpha,grey,grey,grey));
+                    }
+                }
+                img.setImageBitmap(greyBm);
+                return true;
+            }
+        });
+
     }
 
 
@@ -62,5 +94,4 @@ public class MainActivity extends ActionBarActivity {
             Toast.makeText(this, getString(R.string.general_error), Toast.LENGTH_LONG).show();
         }
     }
-
 }
