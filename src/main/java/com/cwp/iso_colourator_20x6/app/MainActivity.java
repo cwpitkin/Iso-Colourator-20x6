@@ -3,6 +3,7 @@ package com.cwp.iso_colourator_20x6.app;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Bundle;
@@ -17,36 +18,44 @@ import android.widget.Toast;
 
 public class MainActivity extends ActionBarActivity {
 
-    private ImageView img;
+    private ImageView mImageView;
+    private Bitmap mRefBitmap;
+    private Bitmap mNewBitmap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        img = (ImageView) findViewById(R.id.imageView);
+        mImageView = (ImageView) findViewById(R.id.imageView);
 
-        img.setOnTouchListener(new ImageView.OnTouchListener() {
+        mImageView.setOnTouchListener(new ImageView.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent event) {
-                int x = (int) event.getX();
-                int y = (int) event.getY();
-                Bitmap refBitmap = ((BitmapDrawable)img.getDrawable()).getBitmap();
-                int height = refBitmap.getHeight();
-                int width = refBitmap.getWidth();
-                Bitmap greyBm = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
-                int pixel,alpha,red,green,blue,grey;
-                for(int i = 0;i<width;i++) {
-                    for(int j = 0; j < height;j++) {
-                        pixel = refBitmap.getPixel(i,j);
+                float[] targetHsv = new float[3];
+                float[] currentHsv =new float[3];
+                int pixel = getTargetColour(event.getX(),event.getY());
+                Color.colorToHSV(pixel, targetHsv);
+                int height = mRefBitmap.getHeight();
+                int width = mRefBitmap.getWidth();
+                mNewBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
+                int alpha, red, green, blue, grey;
+                for (int i = 0; i < width; i++) {
+                    for (int j = 0; j < height; j++) {
+                        pixel = mRefBitmap.getPixel(i, j);
+                        Color.colorToHSV(pixel,currentHsv);
                         alpha = Color.alpha(pixel);
                         red = Color.red(pixel);
                         green = Color.green(pixel);
                         blue = Color.blue(pixel);
-                        grey = (int)(0.299 * red + 0.587 * green + 0.114 * blue);
-                        greyBm.setPixel(i,j,Color.argb(alpha,grey,grey,grey));
+                        if(currentHsv[0] <= targetHsv[0] + 15 && currentHsv[0] >= targetHsv[0] - 15 && currentHsv[1] <= targetHsv[1] + 15 && currentHsv[1] >= targetHsv[1] - 15  ) {
+                            mNewBitmap.setPixel(i, j, Color.argb(alpha, red, green, blue));
+                        } else {
+                            grey = (int) (0.299 * red + 0.587 * green + 0.114 * blue);
+                            mNewBitmap.setPixel(i, j, Color.argb(alpha, grey, grey, grey));
+                        }
                     }
                 }
-                img.setImageBitmap(greyBm);
+                mImageView.setImageBitmap(mNewBitmap);
                 return true;
             }
         });
@@ -86,12 +95,35 @@ public class MainActivity extends ActionBarActivity {
                     Toast.makeText(this,getString(R.string.general_error),Toast.LENGTH_LONG).show();
                 } else {
                     Uri imageUri = data.getData();
-                    String imagePath = imageUri.getPath();
-                    img.setImageURI(imageUri);
+                    mImageView.setImageURI(imageUri);
+                    mRefBitmap = ((BitmapDrawable) mImageView.getDrawable()).getBitmap();
                 }
             }
         } else if(resultCode != RESULT_CANCELED) {
             Toast.makeText(this, getString(R.string.general_error), Toast.LENGTH_LONG).show();
         }
+    }
+
+    private int getTargetColour(float eventX, float eventY) {
+        float eventXY[] = new float[] {eventX,eventY};
+        Matrix invertMatrix = new Matrix();
+        mImageView.getImageMatrix().invert(invertMatrix);
+        invertMatrix.mapPoints(eventXY);
+        int x = Integer.valueOf((int)eventXY[0]);
+        int y = Integer.valueOf((int)eventXY[1]);
+        //Limit x, y range within bitmap
+        if(x < 0){
+            x = 0;
+        }else if(x > mRefBitmap.getWidth()-1){
+            x = mRefBitmap.getWidth()-1;
+        }
+
+        if(y < 0){
+            y = 0;
+        }else if(y > mRefBitmap.getHeight()-1){
+            y = mRefBitmap.getHeight()-1;
+        }
+
+        return mRefBitmap.getPixel(x, y);
     }
 }
